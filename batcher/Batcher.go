@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+// Batcher is a utility that batches items together and then invokes the provided function
+// on that whenever it reaches the specified size or the timeout is reached.
 type Batcher[T any] struct {
 	fn         func([]*T)
 	size       int
@@ -13,6 +15,9 @@ type Batcher[T any] struct {
 	background bool
 }
 
+// New creates a new Batcher that will invoke the provided function when the batch size is reached.
+// The size is the maximum number of items that can be batched before processing the batch.
+// The timeout is the duration that will be waited before processing the batch.
 func New[T any](size int, timeout time.Duration, fn func(batch []*T), background bool) *Batcher[T] {
 	b := &Batcher[T]{
 		fn:         fn,
@@ -27,6 +32,8 @@ func New[T any](size int, timeout time.Duration, fn func(batch []*T), background
 	return b
 }
 
+// Put adds an item to the batch. If the batch is full, or the timeout is reached
+// the batch will be processed.
 func (b *Batcher[T]) Put(item *T) {
 	b.ch <- item
 }

@@ -1,7 +1,8 @@
 package utils
 
-// send returns true if it was able to send t on channel c.
-// It returns false if c is closed.
+// SafeSend is a helper function that sends a value on a channel and returns.
+// It is safe to use with closed channels.
+// It uses go generics to allow for any type of channel.
 func SafeSend[T any](ch chan T, t T) bool {
 	defer func() {
 		_ = recover()
