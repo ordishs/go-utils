@@ -48,14 +48,16 @@ func (b *Batcher[T]) worker() {
 			}
 		}
 	saveBatch:
-		if b.background {
-			// var batch []*T
-			// copy(batch, b.batch)
-			go b.fn(b.batch)
-		} else {
-			b.fn(b.batch)
+		if len(b.batch) > 0 {
+			if b.background {
+				// var batch []*T
+				// copy(batch, b.batch)
+				go b.fn(b.batch)
+			} else {
+				b.fn(b.batch)
+			}
+			b.batch = b.batch[:0] // Clear batch but keep the allocated memory
+			// b.batch = nil // Clear batch and clear allocated memory
 		}
-		b.batch = b.batch[:0] // Clear batch but keep the allocated memory
-		// b.batch = nil // Clear batch and clear allocated memory
 	}
 }
