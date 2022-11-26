@@ -1,0 +1,90 @@
+// cSpell: ignore expiringmap,Equalf,Nilf
+package expiringmap
+
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestStringExpiringMap(t *testing.T) {
+	m := New[string, string](100 * time.Millisecond)
+
+	m.Set("foo", "bar")
+
+	v, ok := m.Get("foo")
+	assert.Equalf(t, ok, true, "expected to find key")
+	assert.Equalf(t, v, "bar", "expected to find value")
+
+	time.Sleep(200 * time.Millisecond)
+
+	v, ok = m.Get("foo")
+	assert.Equalf(t, ok, false, "expected to not find key")
+	assert.Equalf(t, v, "", "expected v to be empty string")
+}
+
+func TestIntExpiringMap(t *testing.T) {
+	m := New[string, int](100 * time.Millisecond)
+
+	m.Set("foo", 1)
+
+	v, ok := m.Get("foo")
+	assert.Equalf(t, ok, true, "expected to find key")
+	assert.Equalf(t, v, 1, "expected to find value")
+
+	time.Sleep(200 * time.Millisecond)
+
+	v, ok = m.Get("foo")
+	assert.Equalf(t, ok, false, "expected to not find key")
+	assert.Equalf(t, v, 0, "expected v to be empty string")
+}
+
+func TestStructExpiringMap(t *testing.T) {
+	type Foo struct {
+		Bar string
+	}
+
+	m := New[string, *Foo](100 * time.Millisecond)
+
+	m.Set("foo", &Foo{Bar: "bar"})
+
+	v, ok := m.Get("foo")
+	assert.Equalf(t, ok, true, "expected to find key")
+	assert.Equalf(t, v.Bar, "bar", "expected to find value")
+
+	time.Sleep(200 * time.Millisecond)
+
+	v, ok = m.Get("foo")
+	assert.Equalf(t, ok, false, "expected to not find key")
+	assert.Nilf(t, v, "expected v to be nil")
+}
+
+func TestLenExpiringMap(t *testing.T) {
+	m := New[string, string](100 * time.Millisecond)
+
+	m.Set("foo", "bar")
+
+	l := m.Len()
+	assert.Equalf(t, l, 1, "expected len to be 1")
+
+	time.Sleep(200 * time.Millisecond)
+
+	l = m.Len()
+	assert.Equalf(t, l, 0, "expected len to be 0")
+}
+
+func TestItemsExpiringMap(t *testing.T) {
+	m := New[string, string](100 * time.Millisecond)
+
+	m.Set("foo", "bar")
+
+	mm := m.Items()
+	assert.Equalf(t, mm["foo"], "bar", "expected to find key")
+
+	time.Sleep(200 * time.Millisecond)
+
+	mm = m.Items()
+	assert.Equalf(t, mm["foo"], "", "expected to find key")
+
+}
