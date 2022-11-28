@@ -15,16 +15,22 @@ type itemWrapper[V any] struct {
 // the key must be comparable.
 // The map is safe for concurrent use.
 type ExpiringMap[K comparable, V any] struct {
-	mu     sync.RWMutex
-	expiry time.Duration
-	items  map[K]*itemWrapper[V]
+	mu         sync.RWMutex
+	expiry     time.Duration
+	items      map[K]*itemWrapper[V]
+	expiryChan chan V
 }
 
 // New creates a new ExpiringMap with the given expiry duration.
-func New[K comparable, V any](expire time.Duration) *ExpiringMap[K, V] {
+
+func New[K comparable, V any](expire time.Duration, expiryChan ...chan V) *ExpiringMap[K, V] {
 	m := &ExpiringMap[K, V]{
 		expiry: expire,
 		items:  make(map[K]*itemWrapper[V]),
+	}
+
+	if len(expiryChan) > 0 {
+		m.expiryChan = expiryChan[0]
 	}
 
 	go func() {
@@ -114,6 +120,10 @@ func (m *ExpiringMap[K, V]) clean() {
 	for key, item := range m.items {
 		if now > item.expiry {
 			delete(m.items, key)
+
+			if m.expiryChan != nil {
+				m.expiryChan <- item.item
+			}
 		}
 	}
 }

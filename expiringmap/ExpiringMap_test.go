@@ -88,3 +88,23 @@ func TestItemsExpiringMap(t *testing.T) {
 	assert.Equalf(t, mm["foo"], "", "expected to find key")
 
 }
+
+func TestExpiringChannel(t *testing.T) {
+	ch := make(chan string, 1)
+
+	m := New[string](100*time.Millisecond, ch)
+
+	m.Set("foo", "bar")
+
+	mm := m.Items()
+	assert.Equalf(t, mm["foo"], "bar", "expected to find key")
+
+	time.Sleep(200 * time.Millisecond)
+
+	mm = m.Items()
+	assert.Equalf(t, mm["foo"], "", "expected to find key")
+
+	item := <-ch
+	assert.Equalf(t, item, "bar", "expected to find expired item")
+
+}
