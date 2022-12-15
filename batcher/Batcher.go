@@ -63,8 +63,9 @@ func (b *Batcher[T]) worker() {
 			} else {
 				b.fn(b.batch)
 			}
-			b.batch = b.batch[:0] // Clear batch but keep the allocated memory
-			// b.batch = nil // Clear batch and clear allocated memory
+
+			// De-reference the batch
+			b.batch = nil
 		}
 	}
 }
