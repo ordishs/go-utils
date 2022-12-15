@@ -56,16 +56,19 @@ func (b *Batcher[T]) worker() {
 		}
 	saveBatch:
 		if len(b.batch) > 0 {
-			if b.background {
-				// var batch []*T
-				// copy(batch, b.batch)
-				go b.fn(b.batch)
-			} else {
-				b.fn(b.batch)
+			var copyBatch []*T
+
+			for _, item := range b.batch {
+				copyBatch = append(copyBatch, item)
 			}
 
-			// De-reference the batch
-			b.batch = nil
+			b.batch = b.batch[:0] // Clear the batch slice without reallocating the underlying memory
+
+			if b.background {
+				go b.fn(copyBatch)
+			} else {
+				b.fn(copyBatch)
+			}
 		}
 	}
 }
