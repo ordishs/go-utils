@@ -18,12 +18,12 @@ type ExpiringMap[K comparable, V any] struct {
 	mu         sync.RWMutex
 	expiry     time.Duration
 	items      map[K]*itemWrapper[V]
-	expiryChan chan V
+	expiryChan chan []V
 }
 
 // New creates a new ExpiringMap with the given expiry duration.
 
-func New[K comparable, V any](expire time.Duration, expiryChan ...chan V) *ExpiringMap[K, V] {
+func New[K comparable, V any](expire time.Duration, expiryChan ...chan []V) *ExpiringMap[K, V] {
 	m := &ExpiringMap[K, V]{
 		expiry: expire,
 		items:  make(map[K]*itemWrapper[V]),
@@ -117,13 +117,18 @@ func (m *ExpiringMap[K, V]) clean() {
 
 	now := time.Now().UnixNano()
 
+	var expired []V
+
 	for key, item := range m.items {
 		if now > item.expiry {
-			delete(m.items, key)
-
 			if m.expiryChan != nil {
-				m.expiryChan <- item.item
+				expired = append(expired, item.item)
 			}
+
+			delete(m.items, key)
 		}
+	}
+	if m.expiryChan != nil && len(expired) > 0 {
+		m.expiryChan <- expired
 	}
 }

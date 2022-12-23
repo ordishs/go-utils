@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStringExpiringMap(t *testing.T) {
@@ -90,7 +91,7 @@ func TestItemsExpiringMap(t *testing.T) {
 }
 
 func TestExpiringChannel(t *testing.T) {
-	ch := make(chan string, 1)
+	ch := make(chan []string, 1)
 
 	m := New[string](100*time.Millisecond, ch)
 
@@ -104,7 +105,8 @@ func TestExpiringChannel(t *testing.T) {
 	mm = m.Items()
 	assert.Equalf(t, mm["foo"], "", "expected to find key")
 
-	item := <-ch
-	assert.Equalf(t, item, "bar", "expected to find expired item")
+	items := <-ch
+	require.Lenf(t, items, 1, "expected to find 1 expired item")
+	assert.Equalf(t, items[0], "bar", "expected to find expired item")
 
 }
