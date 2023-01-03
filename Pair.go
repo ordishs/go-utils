@@ -10,8 +10,8 @@ type Pair[F, S any] struct {
 	Second S
 }
 
-func NewPair(f, s any) Pair[any, any] {
-	return Pair[any, any]{f, s}
+func NewPair[F, S any](f F, s S) Pair[F, S] {
+	return Pair[F, S]{f, s}
 }
 
 func (p Pair[F, S]) String() string {
