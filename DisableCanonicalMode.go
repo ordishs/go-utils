@@ -27,7 +27,8 @@ func DisableCanonicalMode(optionalLogger ...Logger) *ttyState {
 
 	fh, err := os.OpenFile("/dev/tty", os.O_RDWR, 0666)
 	if err != nil {
-		l.Fatalf("Could not open /dev/tty: %v", err)
+		l.Errorf("Could not open /dev/tty: %v", err)
+		return nil
 	}
 
 	previousState := getSttyState(fh, l)
