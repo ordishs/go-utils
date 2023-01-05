@@ -18,28 +18,43 @@ type ExpiringMap[K comparable, V any] struct {
 	mu         sync.RWMutex
 	expiry     time.Duration
 	items      map[K]*itemWrapper[V]
-	expiryChan chan []V
+	evictionCh chan []V
+	evictionFn func(V) bool
 }
 
 // New creates a new ExpiringMap with the given expiry duration.
 
-func New[K comparable, V any](expire time.Duration, expiryChan ...chan []V) *ExpiringMap[K, V] {
+func New[K comparable, V any](expire time.Duration) *ExpiringMap[K, V] {
 	m := &ExpiringMap[K, V]{
 		expiry: expire,
 		items:  make(map[K]*itemWrapper[V]),
 	}
 
-	if len(expiryChan) > 0 {
-		m.expiryChan = expiryChan[0]
+	if expire != 0 {
+		go func() {
+			for {
+				time.Sleep(expire)
+				m.clean()
+			}
+		}()
 	}
 
-	go func() {
-		for {
-			time.Sleep(expire)
-			m.clean()
-		}
-	}()
+	return m
+}
 
+func (m *ExpiringMap[K, V]) WithEvictionChannel(ch chan []V) *ExpiringMap[K, V] {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.evictionCh = ch
+	return m
+}
+
+func (m *ExpiringMap[K, V]) WithEvictionFunction(f func(V) bool) *ExpiringMap[K, V] {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.evictionFn = f
 	return m
 }
 
@@ -117,18 +132,23 @@ func (m *ExpiringMap[K, V]) clean() {
 
 	now := time.Now().UnixNano()
 
-	var expired []V
+	var expiredItems []V
 
 	for key, item := range m.items {
 		if now > item.expiry {
-			if m.expiryChan != nil {
-				expired = append(expired, item.item)
+			if m.evictionFn != nil && !m.evictionFn(item.item) {
+				continue
+			}
+
+			if m.evictionCh != nil {
+				expiredItems = append(expiredItems, item.item)
 			}
 
 			delete(m.items, key)
 		}
 	}
-	if m.expiryChan != nil && len(expired) > 0 {
-		m.expiryChan <- expired
+
+	if m.evictionCh != nil && len(expiredItems) > 0 {
+		m.evictionCh <- expiredItems
 	}
 }

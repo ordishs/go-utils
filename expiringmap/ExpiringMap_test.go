@@ -93,7 +93,7 @@ func TestItemsExpiringMap(t *testing.T) {
 func TestExpiringChannel(t *testing.T) {
 	ch := make(chan []string, 1)
 
-	m := New[string](100*time.Millisecond, ch)
+	m := New[string, string](100 * time.Millisecond).WithEvictionChannel(ch)
 
 	m.Set("foo", "bar")
 
@@ -108,5 +108,39 @@ func TestExpiringChannel(t *testing.T) {
 	items := <-ch
 	require.Lenf(t, items, 1, "expected to find 1 expired item")
 	assert.Equalf(t, items[0], "bar", "expected to find expired item")
+
+}
+
+func TestExpiringFunctionTrue(t *testing.T) {
+	m := New[string, string](100 * time.Millisecond).WithEvictionFunction(func(string) bool {
+		return true
+	})
+
+	m.Set("foo", "bar")
+
+	mm := m.Items()
+	assert.Equalf(t, mm["foo"], "bar", "expected to find key")
+
+	time.Sleep(200 * time.Millisecond)
+
+	mm = m.Items()
+	assert.Equalf(t, mm["foo"], "", "expected to find key")
+
+}
+
+func TestExpiringFunctionFalse(t *testing.T) {
+	m := New[string, string](100 * time.Millisecond).WithEvictionFunction(func(string) bool {
+		return false
+	})
+
+	m.Set("foo", "bar")
+
+	mm := m.Items()
+	assert.Equalf(t, mm["foo"], "bar", "expected to find key")
+
+	time.Sleep(200 * time.Millisecond)
+
+	mm = m.Items()
+	assert.Lenf(t, mm, 1, "expected to have 1 item")
 
 }
