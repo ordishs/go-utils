@@ -144,3 +144,34 @@ func TestExpiringFunctionFalse(t *testing.T) {
 	assert.Lenf(t, mm, 1, "expected to have 1 item")
 
 }
+
+func TestIterateFunction(t *testing.T) {
+	m := New[string, string](100 * time.Millisecond)
+
+	m.Set("foo", "bar")
+	m.Set("bar", "foo")
+
+	m.IterateWithFn(func(k string, v string) bool {
+		assert.Equalf(t, k, "foo", "expected to find key")
+		assert.Equalf(t, v, "bar", "expected to find value")
+		return false
+
+	})
+}
+
+func TestIterateFunctionWithStopChan(t *testing.T) {
+	m := New[string, string](100 * time.Millisecond)
+
+	m.Set("foo", "bar")
+	m.Set("bar", "foo")
+
+	stopCh := make(chan bool)
+
+	m.IterateWithFn(func(k string, v string) bool {
+		assert.Equalf(t, k, "foo", "expected to find key")
+		assert.Equalf(t, v, "bar", "expected to find value")
+		return false
+
+	}, stopCh)
+
+}

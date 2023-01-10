@@ -104,6 +104,30 @@ func (m *ExpiringMap[K, V]) Len() int {
 	return len(m.items)
 }
 
+// Iterate iterates over the map and calls the given function for each item.
+// If the function returns false, the iteration stops.
+// If write is true, the map is locked for writing, otherwise it is locked for reading.
+func (m *ExpiringMap[K, V]) IterateWithFn(fn func(K, V) bool, stopCh ...chan bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	ch := make(chan bool)
+	if len(stopCh) > 0 {
+		ch = stopCh[0]
+	}
+
+	for key, item := range m.items {
+		select {
+		case <-ch:
+			return
+		default:
+			if !fn(key, item.item) {
+				return
+			}
+		}
+	}
+}
+
 // Items returns a copy of the items in the map.
 func (m *ExpiringMap[K, V]) Items() map[K]V {
 	m.mu.RLock()
