@@ -3,6 +3,8 @@ package utils
 import "log"
 
 type Logger interface {
+	LogLevel() int
+	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
 	Warnf(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
@@ -10,6 +12,14 @@ type Logger interface {
 }
 
 type defaultLogger struct{}
+
+func (defaultLogger) LogLevel() int {
+	return 0
+}
+
+func (l *defaultLogger) Debugf(format string, args ...interface{}) {
+	log.Printf("DEBUG: "+format, args)
+}
 
 func (l *defaultLogger) Infof(format string, args ...interface{}) {
 	log.Printf("INFO: "+format, args)
