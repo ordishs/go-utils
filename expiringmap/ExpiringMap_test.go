@@ -112,7 +112,7 @@ func TestExpiringChannel(t *testing.T) {
 }
 
 func TestExpiringFunctionTrue(t *testing.T) {
-	m := New[string, string](100 * time.Millisecond).WithEvictionFunction(func(string) bool {
+	m := New[string, string](100 * time.Millisecond).WithEvictionFunction(func(string, string) bool {
 		return true
 	})
 
@@ -129,7 +129,7 @@ func TestExpiringFunctionTrue(t *testing.T) {
 }
 
 func TestExpiringFunctionFalse(t *testing.T) {
-	m := New[string, string](100 * time.Millisecond).WithEvictionFunction(func(string) bool {
+	m := New[string, string](100 * time.Millisecond).WithEvictionFunction(func(string, string) bool {
 		return false
 	})
 

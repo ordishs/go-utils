@@ -19,7 +19,7 @@ type ExpiringMap[K comparable, V any] struct {
 	expiry     time.Duration
 	items      map[K]*itemWrapper[V]
 	evictionCh chan []V
-	evictionFn func(V) bool
+	evictionFn func(K, V) bool
 }
 
 // New creates a new ExpiringMap with the given expiry duration.
@@ -50,7 +50,7 @@ func (m *ExpiringMap[K, V]) WithEvictionChannel(ch chan []V) *ExpiringMap[K, V] 
 	return m
 }
 
-func (m *ExpiringMap[K, V]) WithEvictionFunction(f func(V) bool) *ExpiringMap[K, V] {
+func (m *ExpiringMap[K, V]) WithEvictionFunction(f func(K, V) bool) *ExpiringMap[K, V] {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -160,7 +160,7 @@ func (m *ExpiringMap[K, V]) clean() {
 
 	for key, item := range m.items {
 		if now > item.expiry {
-			if m.evictionFn != nil && !m.evictionFn(item.item) {
+			if m.evictionFn != nil && !m.evictionFn(key, item.item) {
 				continue
 			}
 
