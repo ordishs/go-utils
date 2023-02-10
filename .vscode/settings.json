@@ -4,6 +4,7 @@
     "expiringmap",
     "Infof",
     "Lenf",
+    "millis",
     "previousState",
     "stty",
     "Warnf"
