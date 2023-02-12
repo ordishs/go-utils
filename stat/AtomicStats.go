@@ -103,7 +103,7 @@ func (s *AtomicStats) String(indent string) string {
 
 	avgDuration := totalDuration / time.Duration(totalCount)
 	sb.WriteString(indent)
-	sb.WriteString(fmt.Sprintf("%15s: %5d (%s)\n", "TOTAL", totalCount, avgDuration.String()))
+	sb.WriteString(fmt.Sprintf("%20s: %5d (%s)\n", "TOTAL", totalCount, avgDuration.String()))
 
 	return sb.String()
 }
