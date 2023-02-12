@@ -98,7 +98,7 @@ func (s *AtomicStats) String(indent string) string {
 		if sb.Len() > 0 {
 			sb.WriteString(indent)
 		}
-		sb.WriteString(fmt.Sprintf("%15s: %5d (%s)\n", key, stat.count, stat.GetAverageString()))
+		sb.WriteString(fmt.Sprintf("%20s: %5d (%s)\n", key, stat.count, stat.GetAverageString()))
 	}
 
 	avgDuration := totalDuration / time.Duration(totalCount)
