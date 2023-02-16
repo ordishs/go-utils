@@ -7,15 +7,16 @@ type Safemap[K comparable, V any] struct {
 	m  map[K]V
 }
 
-func NewSafeMap[K comparable, V any]() *Safemap[K, V] {
+func New[K comparable, V any]() *Safemap[K, V] {
 	return &Safemap[K, V]{m: make(map[K]V)}
 }
 
-func (s *Safemap[K, V]) Get(key K) V {
+func (s *Safemap[K, V]) Get(key K) (V, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	return s.m[key]
+	value, ok := s.m[key]
+	return value, ok
 }
 
 func (s *Safemap[K, V]) Set(key K, value V) {
