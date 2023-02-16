@@ -108,6 +108,44 @@ func (s *AtomicStats) String(indent string) string {
 	return sb.String()
 }
 
+func (s *AtomicStats) GetTotalDuration() time.Duration {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.stats == nil {
+		return 0
+	}
+
+	var totalDuration time.Duration
+
+	for _, stat := range s.stats {
+		totalDuration += stat.duration
+	}
+
+	return totalDuration
+}
+
+func (s *AtomicStats) GetTotalDurationAndCount() (time.Duration, int32) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.stats == nil {
+		return 0, 0
+	}
+
+	var totalDuration time.Duration
+	var totalCount int32
+
+	for _, stat := range s.stats {
+		totalDuration += stat.duration
+		totalCount += stat.count
+	}
+
+	if totalCount == 0 {
+		return 0, 0
+	}
+
+	return totalDuration, totalCount
+}
+
 func (s *AtomicStats) GetAverageDuration() time.Duration {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
