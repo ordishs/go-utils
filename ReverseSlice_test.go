@@ -75,6 +75,6 @@ func TestDecodeAndReverseHashString(t *testing.T) {
 }
 
 func TestHexEncodeAndReverseBytes(t *testing.T) {
-	str := HexEncodeAndReverseBytes([]byte{5, 4, 3, 2, 1})
+	str := ReverseAndHexEncodeSlice([]byte{5, 4, 3, 2, 1})
 	assert.Equal(t, "0102030405", str)
 }

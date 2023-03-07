@@ -66,8 +66,8 @@ func DecodeAndReverseHashString(hexStr string) ([32]byte, error) {
 	return ReverseHash(b32), nil
 }
 
-// HexEncodeAndReverseBytes encodes the given byte slice to a hex string and then reverses the bytes.
-func HexEncodeAndReverseBytes(b []byte) string {
+// ReverseAndHexEncodeSlice encodes the given byte slice to a hex string and then reverses the bytes.
+func ReverseAndHexEncodeSlice(b []byte) string {
 	b = ReverseSlice(b) // This is a copy of the byte slice
 
 	str := hex.EncodeToString(b)
@@ -75,7 +75,7 @@ func HexEncodeAndReverseBytes(b []byte) string {
 	return str
 }
 
-func HexEncodeAndReverse(b32 [32]byte) string {
+func ReverseAndHexEncodeHash(b32 [32]byte) string {
 	b := ReverseSlice(b32[:]) // This is a copy of the byte slice
 
 	str := hex.EncodeToString(b)
