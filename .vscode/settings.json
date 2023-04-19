@@ -1,12 +1,17 @@
 {
   "cSpell.words": [
+    "Backoff",
+    "contrib",
     "Debugf",
     "expiringmap",
     "Infof",
     "Lenf",
     "millis",
+    "opentelemetry",
+    "otelgrpc",
     "previousState",
     "Safemap",
+    "stretchr",
     "stty",
     "Warnf"
   ]
