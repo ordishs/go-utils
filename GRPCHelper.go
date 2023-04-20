@@ -64,10 +64,6 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 		return nil, errors.New("address is required")
 	}
 
-	if err := validateConnectionOptions(connectionOptions); err != nil {
-		return nil, err
-	}
-
 	if connectionOptions.MaxMessageSize == 0 {
 		connectionOptions.MaxMessageSize = 1024 * 1024 * 1000 // 1GB: transactions are getting bigger, current limit is 9MB
 	}
@@ -80,35 +76,12 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 		),
 	}
 
-	if connectionOptions.SecurityLevel == 0 {
-		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-
-	} else {
-		cert, err := tls.LoadX509KeyPair(connectionOptions.CertFile, connectionOptions.KeyFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load cert key pair: %w", err)
-		}
-
-		// Load the server's CA certificate from disk
-		caCert, err := os.ReadFile(connectionOptions.CaCertFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read ca cert file: %w", err)
-		}
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-
-		// Create a new gRPC client with TLS credentials
-		creds := credentials.NewTLS(&tls.Config{
-			Certificates:       []tls.Certificate{cert},
-			InsecureSkipVerify: true,
-			RootCAs:            caCertPool,
-		})
-
-		opts = append(
-			opts,
-			grpc.WithTransportCredentials(creds),
-		)
+	tlsCredentials, err := loadTLSCredentials(connectionOptions, false)
+	if err != nil {
+		return nil, err
 	}
+
+	opts = append(opts, grpc.WithTransportCredentials(tlsCredentials))
 
 	if connectionOptions.Tracer {
 		opts = append(
@@ -144,10 +117,6 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 }
 
 func GetGRPCServer(connectionOptions *ConnectionOptions) (*grpc.Server, error) {
-	if err := validateConnectionOptions(connectionOptions); err != nil {
-		return nil, err
-	}
-
 	var opts []grpc.ServerOption
 
 	if connectionOptions.MaxMessageSize == 0 {
@@ -161,57 +130,14 @@ func GetGRPCServer(connectionOptions *ConnectionOptions) (*grpc.Server, error) {
 		opts = append(opts, grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
 
-	if connectionOptions.SecurityLevel > 0 {
-		cert, err := tls.LoadX509KeyPair(connectionOptions.CertFile, connectionOptions.KeyFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read key pair: %w", err)
-		}
-
-		// Load the server's CA certificate from disk
-		caCert, err := os.ReadFile(connectionOptions.CaCertFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read ca cert file: %w", err)
-		}
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-
-		// Create a new gRPC server with TLS credentials
-		tlsConfig := &tls.Config{
-			Certificates:       []tls.Certificate{cert},
-			InsecureSkipVerify: true,
-			RootCAs:            caCertPool,
-		}
-
-		if connectionOptions.SecurityLevel == 2 {
-			tlsConfig.ClientAuth = tls.RequireAnyClientCert
-		} else if connectionOptions.SecurityLevel == 3 {
-			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-		}
-
-		creds := credentials.NewTLS(tlsConfig)
-
-		opts = append(opts, grpc.Creds(creds))
+	tlsCredentials, err := loadTLSCredentials(connectionOptions, true)
+	if err != nil {
+		return nil, err
 	}
+
+	opts = append(opts, grpc.Creds(tlsCredentials))
 
 	return grpc.NewServer(opts...), nil
-}
-
-func validateConnectionOptions(connectionData *ConnectionOptions) error {
-	if connectionData.SecurityLevel > 0 {
-		if connectionData.CertFile == "" {
-			return errors.New("certFile is required for a secure connection")
-		}
-
-		if connectionData.KeyFile == "" {
-			return errors.New("keyFile is required for a secure connection")
-		}
-
-		if connectionData.CaCertFile == "" {
-			return errors.New("caCertFile is required for a secure connection")
-		}
-	}
-
-	return nil
 }
 
 func retryInterceptor(maxRetries int, retryBackoff time.Duration) grpc.UnaryClientInterceptor {
@@ -242,4 +168,92 @@ func retryInterceptor(maxRetries int, retryBackoff time.Duration) grpc.UnaryClie
 
 		return err
 	}
+}
+
+func loadTLSCredentials(connectionData *ConnectionOptions, isServer bool) (credentials.TransportCredentials, error) {
+	switch connectionData.SecurityLevel {
+	case 0:
+		// No security
+		return insecure.NewCredentials(), nil
+
+	case 1:
+		// No client cert
+		if isServer {
+			cert, err := tls.LoadX509KeyPair(connectionData.CertFile, connectionData.KeyFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read key pair: %w", err)
+			}
+			return credentials.NewTLS(&tls.Config{
+				Certificates:       []tls.Certificate{cert},
+				InsecureSkipVerify: true,
+				ClientAuth:         tls.NoClientCert,
+			}), nil
+		} else {
+			// Load the server's CA certificate from disk
+			caCert, err := os.ReadFile(connectionData.CaCertFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read ca cert file: %w", err)
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCert)
+
+			return credentials.NewTLS(&tls.Config{
+				RootCAs: caCertPool,
+			}), nil
+		}
+
+	case 2:
+		// Any client cert
+		if isServer {
+			cert, err := tls.LoadX509KeyPair(connectionData.CertFile, connectionData.KeyFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read key pair: %w", err)
+			}
+			return credentials.NewTLS(&tls.Config{
+				Certificates:       []tls.Certificate{cert},
+				InsecureSkipVerify: true,
+				ClientAuth:         tls.RequireAnyClientCert,
+			}), nil
+
+		} else {
+			// Load the server's CA certificate from disk
+			caCert, err := os.ReadFile(connectionData.CaCertFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read ca cert file: %w", err)
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCert)
+
+			cert, err := tls.LoadX509KeyPair(connectionData.CertFile, connectionData.KeyFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read key pair: %w", err)
+			}
+			return credentials.NewTLS(&tls.Config{
+				Certificates:       []tls.Certificate{cert},
+				InsecureSkipVerify: true,
+				RootCAs:            caCertPool,
+			}), nil
+
+		}
+
+	case 3:
+		// Require client cert
+		if isServer {
+			cert, err := tls.LoadX509KeyPair(connectionData.CertFile, connectionData.KeyFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read key pair: %w", err)
+			}
+			return credentials.NewTLS(&tls.Config{
+				Certificates:       []tls.Certificate{cert},
+				InsecureSkipVerify: true,
+				ClientAuth:         tls.RequireAndVerifyClientCert,
+			}), nil
+		} else {
+			// Load the client's certificate from disk
+
+			return nil, nil
+		}
+	}
+
+	return nil, errors.New("securityLevel must be 0, 1, 2 or 3")
 }

@@ -97,7 +97,6 @@ func TestGRPCServerUsingGRPCHelperSecurityLevel1(t *testing.T) {
 		SecurityLevel: 1,
 		CertFile:      "certs/server.crt",
 		KeyFile:       "certs/server.key",
-		CaCertFile:    "certs/ca.crt",
 	})
 	require.NoError(t, err)
 
@@ -117,8 +116,6 @@ func TestGRPCServerUsingGRPCHelperSecurityLevel1(t *testing.T) {
 	// Connect to the server with a gRPC client
 	conn, err := utils.GetGRPCClient(context.Background(), "localhost:9002", &utils.ConnectionOptions{
 		SecurityLevel: 1,
-		CertFile:      "certs/client1.crt",
-		KeyFile:       "certs/client1.key",
 		CaCertFile:    "certs/ca.crt",
 	})
 	require.NoError(t, err)
