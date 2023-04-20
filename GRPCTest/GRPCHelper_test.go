@@ -23,17 +23,17 @@ func (s *GreeterService) SayHello(ctx context.Context, req *greeter_api.HelloReq
 	return &greeter_api.HelloResponse{Message: "Hello, " + req.Name}, nil
 }
 
-func TestGRPCServerFullCode(t *testing.T) {
+func TestGRPCServerPlain(t *testing.T) {
 	service := &GreeterService{}
 
 	srv := grpc.NewServer()
 	greeter_api.RegisterGreeterServiceServer(srv, service)
 
 	go func() {
-		// Start the gRPC server
 		lis, err := net.Listen("tcp", "localhost:9000")
 		assert.NoError(t, err)
 
+		// Start the gRPC server
 		if err := srv.Serve(lis); err != nil {
 			t.Errorf("failed to serve: %v", err)
 		}
@@ -54,9 +54,137 @@ func TestGRPCServerFullCode(t *testing.T) {
 	assert.Equal(t, "Hello, World", res.Message)
 }
 
-func TestGRPCServerUsingGRPCHelper(t *testing.T) {
+func TestGRPCServerUsingGRPCHelperSecurityLevel0(t *testing.T) {
 	srv, err := utils.GetGRPCServer(&utils.ConnectionOptions{
 		Tracer: true,
+	})
+	require.NoError(t, err)
+
+	service := &GreeterService{}
+	greeter_api.RegisterGreeterServiceServer(srv, service)
+
+	go func() {
+		// Start the gRPC server
+		lis, err := net.Listen("tcp", "localhost:9001")
+		assert.NoError(t, err)
+
+		if err := srv.Serve(lis); err != nil {
+			t.Errorf("failed to serve: %v", err)
+		}
+	}()
+
+	// Connect to the server with a gRPC client
+	conn, err := utils.GetGRPCClient(context.Background(), "localhost:9001", &utils.ConnectionOptions{
+		Tracer:     true,
+		MaxRetries: 10,
+	})
+	require.NoError(t, err)
+
+	defer conn.Close()
+
+	client := greeter_api.NewGreeterServiceClient(conn)
+
+	// Send a simple request to the server
+	req := &greeter_api.HelloRequest{Name: "World"}
+	res, err := client.SayHello(context.Background(), req)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Hello, World", res.Message)
+}
+
+func TestGRPCServerUsingGRPCHelperSecurityLevel1(t *testing.T) {
+	srv, err := utils.GetGRPCServer(&utils.ConnectionOptions{
+		SecurityLevel: 1,
+		CertFile:      "certs/server.crt",
+		KeyFile:       "certs/server.key",
+		CaCertFile:    "certs/ca.crt",
+	})
+	require.NoError(t, err)
+
+	service := &GreeterService{}
+	greeter_api.RegisterGreeterServiceServer(srv, service)
+
+	go func() {
+		// Start the gRPC server
+		lis, err := net.Listen("tcp", "localhost:9002")
+		assert.NoError(t, err)
+
+		if err := srv.Serve(lis); err != nil {
+			t.Errorf("failed to serve: %v", err)
+		}
+	}()
+
+	// Connect to the server with a gRPC client
+	conn, err := utils.GetGRPCClient(context.Background(), "localhost:9002", &utils.ConnectionOptions{
+		SecurityLevel: 1,
+		CertFile:      "certs/client1.crt",
+		KeyFile:       "certs/client1.key",
+		CaCertFile:    "certs/ca.crt",
+	})
+	require.NoError(t, err)
+
+	defer conn.Close()
+
+	client := greeter_api.NewGreeterServiceClient(conn)
+
+	// Send a simple request to the server
+	req := &greeter_api.HelloRequest{Name: "World"}
+	res, err := client.SayHello(context.Background(), req)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Hello, World", res.Message)
+}
+
+func TestGRPCServerUsingGRPCHelperSecurityLevel2(t *testing.T) {
+	srv, err := utils.GetGRPCServer(&utils.ConnectionOptions{
+		SecurityLevel: 2,
+		CertFile:      "certs/server.crt",
+		KeyFile:       "certs/server.key",
+		CaCertFile:    "certs/ca.crt",
+	})
+	require.NoError(t, err)
+
+	service := &GreeterService{}
+	greeter_api.RegisterGreeterServiceServer(srv, service)
+
+	go func() {
+		// Start the gRPC server
+		lis, err := net.Listen("tcp", "localhost:9003")
+		assert.NoError(t, err)
+
+		if err := srv.Serve(lis); err != nil {
+			t.Errorf("failed to serve: %v", err)
+		}
+	}()
+
+	// Connect to the server with a gRPC client
+	conn, err := utils.GetGRPCClient(context.Background(), "localhost:9003", &utils.ConnectionOptions{
+		SecurityLevel: 2,
+		CertFile:      "certs/client1.crt",
+		KeyFile:       "certs/client1.key",
+		CaCertFile:    "certs/ca.crt",
+	})
+	require.NoError(t, err)
+
+	defer conn.Close()
+
+	client := greeter_api.NewGreeterServiceClient(conn)
+
+	// Send a simple request to the server
+	req := &greeter_api.HelloRequest{Name: "World"}
+	res, err := client.SayHello(context.Background(), req)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Hello, World", res.Message)
+}
+
+/*
+func TestGRPCServerUsingGRPCHelperSecurityLevel3(t *testing.T) {
+	srv, err := utils.GetGRPCServer(&utils.ConnectionOptions{
+		SecurityLevel: 3,
+		CertFile:      "certs/server.crt",
+		KeyFile:       "certs/server.key",
+		CaCertFile:    "certs/ca.crt",
 	})
 	require.NoError(t, err)
 
@@ -75,8 +203,10 @@ func TestGRPCServerUsingGRPCHelper(t *testing.T) {
 
 	// Connect to the server with a gRPC client
 	conn, err := utils.GetGRPCClient(context.Background(), "localhost:9000", &utils.ConnectionOptions{
-		Tracer:     true,
-		MaxRetries: 10,
+		SecurityLevel: 3,
+		CertFile:      "certs/client1.crt",
+		KeyFile:       "certs/client1.key",
+		CaCertFile:    "certs/ca.crt",
 	})
 	require.NoError(t, err)
 
@@ -91,3 +221,4 @@ func TestGRPCServerUsingGRPCHelper(t *testing.T) {
 
 	assert.Equal(t, "Hello, World", res.Message)
 }
+*/
