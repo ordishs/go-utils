@@ -86,8 +86,8 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 	if connectionOptions.Tracer {
 		opts = append(
 			opts,
-			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-			grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 		)
 	}
 
@@ -126,8 +126,8 @@ func GetGRPCServer(connectionOptions *ConnectionOptions) (*grpc.Server, error) {
 	opts = append(opts, grpc.MaxRecvMsgSize(connectionOptions.MaxMessageSize))
 
 	if connectionOptions.Tracer {
-		opts = append(opts, grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()))
-		opts = append(opts, grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
+		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()))
+		opts = append(opts, grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
 
 	tlsCredentials, err := loadTLSCredentials(connectionOptions, true)

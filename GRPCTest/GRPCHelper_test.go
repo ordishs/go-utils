@@ -19,7 +19,7 @@ type GreeterService struct {
 }
 
 func (s *GreeterService) SayHello(ctx context.Context, req *greeter_api.HelloRequest) (*greeter_api.HelloResponse, error) {
-	//return nil, status.Error(codes.Unavailable, "Service is currently unavailable")
+	// return nil, status.Error(codes.Unavailable, "Service is currently unavailable")
 	return &greeter_api.HelloResponse{Message: "Hello, " + req.Name}, nil
 }
 
