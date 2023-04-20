@@ -239,6 +239,14 @@ func loadTLSCredentials(connectionData *ConnectionOptions, isServer bool) (crede
 	case 3:
 		// Require client cert
 		if isServer {
+			// Load the server's CA certificate from disk
+			caCert, err := os.ReadFile(connectionData.CaCertFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read ca cert file: %w", err)
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCert)
+
 			cert, err := tls.LoadX509KeyPair(connectionData.CertFile, connectionData.KeyFile)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read key pair: %w", err)
@@ -247,11 +255,27 @@ func loadTLSCredentials(connectionData *ConnectionOptions, isServer bool) (crede
 				Certificates:       []tls.Certificate{cert},
 				InsecureSkipVerify: true,
 				ClientAuth:         tls.RequireAndVerifyClientCert,
+				ClientCAs:          caCertPool,
 			}), nil
-		} else {
-			// Load the client's certificate from disk
 
-			return nil, nil
+		} else {
+			// Load the server's CA certificate from disk
+			caCert, err := os.ReadFile(connectionData.CaCertFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read ca cert file: %w", err)
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCert)
+
+			cert, err := tls.LoadX509KeyPair(connectionData.CertFile, connectionData.KeyFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read key pair: %w", err)
+			}
+			return credentials.NewTLS(&tls.Config{
+				Certificates:       []tls.Certificate{cert},
+				InsecureSkipVerify: true,
+				RootCAs:            caCertPool,
+			}), nil
 		}
 	}
 

@@ -175,7 +175,6 @@ func TestGRPCServerUsingGRPCHelperSecurityLevel2(t *testing.T) {
 	assert.Equal(t, "Hello, World", res.Message)
 }
 
-/*
 func TestGRPCServerUsingGRPCHelperSecurityLevel3(t *testing.T) {
 	srv, err := utils.GetGRPCServer(&utils.ConnectionOptions{
 		SecurityLevel: 3,
@@ -218,4 +217,3 @@ func TestGRPCServerUsingGRPCHelperSecurityLevel3(t *testing.T) {
 
 	assert.Equal(t, "Hello, World", res.Message)
 }
-*/
