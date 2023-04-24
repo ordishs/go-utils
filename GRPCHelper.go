@@ -68,6 +68,10 @@ func init() {
 }
 
 func InitGlobalTracer(serviceName string) (opentracing.Tracer, io.Closer, error) {
+	if opentracing.IsGlobalTracerRegistered() {
+		return nil, nil, errors.New("global tracer already registered")
+	}
+
 	cfg, err := config.FromEnv()
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot parse jaeger environment variables: %v\n", err.Error())
@@ -83,6 +87,8 @@ func InitGlobalTracer(serviceName string) (opentracing.Tracer, io.Closer, error)
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot initialize jaeger tracer: %v\n", err.Error())
 	}
+
+	opentracing.SetGlobalTracer(tracer)
 
 	return tracer, closer, nil
 }
