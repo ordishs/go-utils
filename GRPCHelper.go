@@ -20,6 +20,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const ONE_GIGABYTE = 1024 * 1024 * 1024
+
 // ---------------------------------------------------------------------
 // The PasswordCredentials type and the receivers it implements, allow
 // us to use the grpc.WithPerRPCCredentials() dial option to pass
@@ -65,7 +67,7 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 	}
 
 	if connectionOptions.MaxMessageSize == 0 {
-		connectionOptions.MaxMessageSize = 1024 * 1024 * 1000 // 1GB: transactions are getting bigger, current limit is 9MB
+		connectionOptions.MaxMessageSize = ONE_GIGABYTE
 	}
 
 	opts := []grpc.DialOption{
@@ -120,7 +122,7 @@ func GetGRPCServer(connectionOptions *ConnectionOptions) (*grpc.Server, error) {
 	var opts []grpc.ServerOption
 
 	if connectionOptions.MaxMessageSize == 0 {
-		connectionOptions.MaxMessageSize = 1024 * 1024 * 1000 // 1GB: transactions are getting bigger, current limit is 9MB
+		connectionOptions.MaxMessageSize = ONE_GIGABYTE
 	}
 
 	opts = append(opts, grpc.MaxRecvMsgSize(connectionOptions.MaxMessageSize))
