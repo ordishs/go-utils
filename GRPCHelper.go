@@ -72,7 +72,7 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 		// grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`),
 		grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [{"round_robin":{}}]}`),
 		grpc.WithDefaultCallOptions(
-			grpc.MaxCallRecvMsgSize(connectionOptions.MaxMessageSize),
+			grpc.MaxCallSendMsgSize(connectionOptions.MaxMessageSize),
 		),
 	}
 
