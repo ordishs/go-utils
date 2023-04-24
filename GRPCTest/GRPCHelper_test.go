@@ -56,7 +56,7 @@ func TestGRPCServerPlain(t *testing.T) {
 
 func TestGRPCServerUsingGRPCHelperSecurityLevel0(t *testing.T) {
 	srv, err := utils.GetGRPCServer(&utils.ConnectionOptions{
-		Tracer: true,
+		OpenTelemetry: true,
 	})
 	require.NoError(t, err)
 
@@ -75,8 +75,8 @@ func TestGRPCServerUsingGRPCHelperSecurityLevel0(t *testing.T) {
 
 	// Connect to the server with a gRPC client
 	conn, err := utils.GetGRPCClient(context.Background(), "localhost:9001", &utils.ConnectionOptions{
-		Tracer:     true,
-		MaxRetries: 10,
+		OpenTelemetry: true,
+		MaxRetries:    10,
 	})
 	require.NoError(t, err)
 

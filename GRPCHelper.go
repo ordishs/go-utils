@@ -6,10 +6,15 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
 
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber/jaeger-client-go"
+	"github.com/uber/jaeger-client-go/config"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	"google.golang.org/grpc"
@@ -45,7 +50,8 @@ func (PasswordCredentials) RequireTransportSecurity() bool {
 type ConnectionOptions struct {
 	MaxMessageSize int                 // Max message size in bytes
 	SecurityLevel  int                 // 0 = insecure, 1 = secure, 2 = secure with client cert
-	Tracer         bool                // Enable OpenTelemetry tracing
+	OpenTelemetry  bool                // Enable OpenTelemetry tracing
+	OpenTracing    bool                // Enable OpenTelemetry tracing
 	CertFile       string              // CA cert file if SecurityLevel > 0
 	CaCertFile     string              // CA cert file if SecurityLevel > 0
 	KeyFile        string              // Client key file if SecurityLevel > 1
@@ -59,6 +65,26 @@ type ConnectionOptions struct {
 func init() {
 	// The secret sauce
 	resolver.SetDefaultScheme("dns")
+}
+
+func InitGlobalTracer(serviceName string) (opentracing.Tracer, io.Closer, error) {
+	cfg, err := config.FromEnv()
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot parse jaeger environment variables: %v\n", err.Error())
+	}
+
+	cfg.ServiceName = serviceName
+	cfg.Sampler.Type = jaeger.SamplerTypeConst
+	cfg.Sampler.Param = 100
+
+	var tracer opentracing.Tracer
+	var closer io.Closer
+	tracer, closer, err = cfg.NewTracer()
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot initialize jaeger tracer: %v\n", err.Error())
+	}
+
+	return tracer, closer, nil
 }
 
 func GetGRPCClient(ctx context.Context, address string, connectionOptions *ConnectionOptions) (*grpc.ClientConn, error) {
@@ -85,12 +111,26 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 
 	opts = append(opts, grpc.WithTransportCredentials(tlsCredentials))
 
-	if connectionOptions.Tracer {
+	if connectionOptions.OpenTelemetry {
 		opts = append(
 			opts,
-			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+			grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 		)
+	}
+
+	if connectionOptions.OpenTracing {
+		if opentracing.IsGlobalTracerRegistered() {
+			tracer := opentracing.GlobalTracer()
+
+			opts = append(
+				opts,
+				grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer)),
+				grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer)),
+			)
+		} else {
+			return nil, errors.New("no global tracer set")
+		}
 	}
 
 	if connectionOptions.Credentials != nil {
@@ -127,9 +167,22 @@ func GetGRPCServer(connectionOptions *ConnectionOptions) (*grpc.Server, error) {
 
 	opts = append(opts, grpc.MaxRecvMsgSize(connectionOptions.MaxMessageSize))
 
-	if connectionOptions.Tracer {
-		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()))
-		opts = append(opts, grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	if connectionOptions.OpenTelemetry {
+		opts = append(
+			opts,
+			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		)
+	}
+
+	if connectionOptions.OpenTracing {
+		if opentracing.IsGlobalTracerRegistered() {
+			tracer := opentracing.GlobalTracer()
+			opts = append(opts, grpc.ChainUnaryInterceptor(otgrpc.OpenTracingServerInterceptor(tracer)))
+			opts = append(opts, grpc.ChainStreamInterceptor(otgrpc.OpenTracingStreamServerInterceptor(tracer)))
+		} else {
+			return nil, errors.New("no global tracer set")
+		}
 	}
 
 	tlsCredentials, err := loadTLSCredentials(connectionOptions, true)
