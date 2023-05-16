@@ -120,8 +120,8 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 	if connectionOptions.OpenTelemetry {
 		opts = append(
 			opts,
-			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-			grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 		)
 	}
 
@@ -131,8 +131,8 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 
 			opts = append(
 				opts,
-				grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer)),
-				grpc.WithStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer)),
+				grpc.WithChainUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(tracer)),
+				grpc.WithChainStreamInterceptor(otgrpc.OpenTracingStreamClientInterceptor(tracer)),
 			)
 		} else {
 			return nil, errors.New("no global tracer set")
@@ -149,7 +149,7 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 			connectionOptions.RetryBackoff = 100 * time.Millisecond
 		}
 
-		opts = append(opts, grpc.WithUnaryInterceptor(retryInterceptor(connectionOptions.MaxRetries, connectionOptions.RetryBackoff)))
+		opts = append(opts, grpc.WithChainUnaryInterceptor(retryInterceptor(connectionOptions.MaxRetries, connectionOptions.RetryBackoff)))
 	}
 
 	conn, err := grpc.DialContext(
