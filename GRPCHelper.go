@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
@@ -52,6 +53,7 @@ type ConnectionOptions struct {
 	SecurityLevel  int                 // 0 = insecure, 1 = secure, 2 = secure with client cert
 	OpenTelemetry  bool                // Enable OpenTelemetry tracing
 	OpenTracing    bool                // Enable OpenTelemetry tracing
+	Prometheus     bool                // Enable Prometheus metrics
 	CertFile       string              // CA cert file if SecurityLevel > 0
 	CaCertFile     string              // CA cert file if SecurityLevel > 0
 	KeyFile        string              // Client key file if SecurityLevel > 1
@@ -139,6 +141,15 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 		}
 	}
 
+	if connectionOptions.Prometheus {
+		prometheusMetrics := prometheus.NewClientMetrics()
+		opts = append(
+			opts,
+			grpc.WithChainUnaryInterceptor(prometheusMetrics.UnaryClientInterceptor()),
+			grpc.WithChainStreamInterceptor(prometheusMetrics.StreamClientInterceptor()),
+		)
+	}
+
 	if connectionOptions.Credentials != nil {
 		opts = append(opts, grpc.WithPerRPCCredentials(connectionOptions.Credentials))
 	}
@@ -189,6 +200,15 @@ func GetGRPCServer(connectionOptions *ConnectionOptions) (*grpc.Server, error) {
 		} else {
 			return nil, errors.New("no global tracer set")
 		}
+	}
+
+	if connectionOptions.Prometheus {
+		prometheusMetrics := prometheus.NewServerMetrics()
+		opts = append(
+			opts,
+			grpc.ChainUnaryInterceptor(prometheusMetrics.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(prometheusMetrics.StreamServerInterceptor()),
+		)
 	}
 
 	tlsCredentials, err := loadTLSCredentials(connectionOptions, true)
