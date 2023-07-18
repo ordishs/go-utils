@@ -1,11 +1,14 @@
 {
   "cSpell.words": [
     "Backoff",
+    "chaincfg",
+    "chainhash",
     "contrib",
     "Debugf",
     "expiringmap",
     "Infof",
     "Lenf",
+    "libsv",
     "millis",
     "opentelemetry",
     "opentracing",
