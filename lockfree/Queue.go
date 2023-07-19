@@ -1,29 +1,29 @@
-package utils
+package lockfree
 
 import (
 	"sync/atomic"
 	"unsafe"
 )
 
-// LockFreeQueue is a lock-free unbounded queue.
-type LockFreeQueue[T any] struct {
+// Queue is a lock-free unbounded queue.
+type Queue[T any] struct {
 	head unsafe.Pointer
 	tail unsafe.Pointer
 }
 
 type node[T any] struct {
-	value T
+	value interface{}
 	next  unsafe.Pointer
 }
 
-// NewLockFreeQueue returns an empty queue.
-func NewLockFreeQueue[T any]() *LockFreeQueue[T] {
+// NewQueue returns an empty queue.
+func NewQueue[T any]() *Queue[T] {
 	n := unsafe.Pointer(&node[T]{})
-	return &LockFreeQueue[T]{head: n, tail: n}
+	return &Queue[T]{head: n, tail: n}
 }
 
 // Enqueue puts the given value v at the tail of the queue.
-func (q *LockFreeQueue[T]) Enqueue(v T) {
+func (q *Queue[T]) Enqueue(v T) {
 	// Create a node for the new value
 	n := &node[T]{value: v}
 
@@ -46,9 +46,22 @@ func (q *LockFreeQueue[T]) Enqueue(v T) {
 	}
 }
 
+func (q *Queue[T]) Dequeue() interface{} {
+	return q.dequeue()
+}
+
+func (q *Queue[T]) DequeueAsType() (T, bool) {
+	v := q.dequeue()
+	if v == nil {
+		var t T
+		return t, false
+	}
+	return v.(T), true
+}
+
 // Dequeue removes and returns the value at the head of the queue.
 // It returns a default value of T and false if the queue is empty.
-func (q *LockFreeQueue[T]) Dequeue() (T, bool) {
+func (q *Queue[T]) dequeue() interface{} {
 	for {
 		head := load[T](&q.head)
 		tail := load[T](&q.tail)
@@ -57,8 +70,7 @@ func (q *LockFreeQueue[T]) Dequeue() (T, bool) {
 		if head == load[T](&q.head) { // are head, tail, and next consistent?
 			if head == tail { // is queue empty or tail falling behind?
 				if next == nil { // is queue empty?
-					var t T
-					return t, false // queue is empty, couldn't dequeue
+					return nil // queue is empty, couldn't dequeue
 				}
 				// tail is falling behind.  try to advance it
 				compareAndSwap(&q.tail, tail, next)
@@ -67,7 +79,7 @@ func (q *LockFreeQueue[T]) Dequeue() (T, bool) {
 				v := next.value
 
 				if compareAndSwap[T](&q.head, head, next) {
-					return v, true // Dequeue is done.  return
+					return v // Dequeue is done.  return
 				}
 			}
 		}

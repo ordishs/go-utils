@@ -9,6 +9,7 @@
     "Infof",
     "Lenf",
     "libsv",
+    "lockfree",
     "millis",
     "opentelemetry",
     "opentracing",
