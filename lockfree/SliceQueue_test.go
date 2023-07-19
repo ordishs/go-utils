@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLockFreeQueue(t *testing.T) {
-	q := NewQueue[int]()
+func TestLockFreeSliceQueue(t *testing.T) {
+	q := NewSliceQueue[int](5)
 	require.NotNil(t, q)
-	require.IsType(t, (*Queue[int])(nil), q)
+	require.IsType(t, (*SliceQueue[int])(nil), q)
 
 	q.Enqueue(1)
 	q.Enqueue(2)
@@ -34,9 +34,9 @@ func TestLockFreeQueue(t *testing.T) {
 	assert.IsType(t, (int(0)), d)
 	assert.False(t, ok)
 
-	q2 := NewQueue[string]()
+	q2 := NewSliceQueue[string](5)
 	require.NotNil(t, q2)
-	require.IsType(t, (*Queue[string])(nil), q2)
+	require.IsType(t, (*SliceQueue[string])(nil), q2)
 
 	q2.Enqueue("a")
 	q2.Enqueue("b")
@@ -59,9 +59,9 @@ func TestLockFreeQueue(t *testing.T) {
 	assert.IsType(t, (string("")), h)
 	assert.False(t, ok)
 
-	q3 := NewQueue[*chainhash.Hash]()
+	q3 := NewSliceQueue[*chainhash.Hash](5)
 	require.NotNil(t, q3)
-	require.IsType(t, (*Queue[*chainhash.Hash])(nil), q3)
+	require.IsType(t, (*SliceQueue[*chainhash.Hash])(nil), q3)
 
 	q3.Enqueue(&chainhash.Hash{})
 	i := q3.Dequeue()

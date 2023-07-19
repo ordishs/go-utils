@@ -3,6 +3,7 @@
     "Backoff",
     "chaincfg",
     "chainhash",
+    "cnode",
     "contrib",
     "Debugf",
     "expiringmap",

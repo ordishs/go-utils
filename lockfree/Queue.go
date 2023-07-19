@@ -11,21 +11,21 @@ type Queue[T any] struct {
 	tail unsafe.Pointer
 }
 
-type node[T any] struct {
+type node struct {
 	value interface{}
 	next  unsafe.Pointer
 }
 
 // NewQueue returns an empty queue.
 func NewQueue[T any]() *Queue[T] {
-	n := unsafe.Pointer(&node[T]{})
+	n := unsafe.Pointer(&node{})
 	return &Queue[T]{head: n, tail: n}
 }
 
 // Enqueue puts the given value v at the tail of the queue.
 func (q *Queue[T]) Enqueue(v T) {
 	// Create a node for the new value
-	n := &node[T]{value: v}
+	n := &node{value: v}
 
 	// Now spin until we can update the tail
 	for {
@@ -78,7 +78,7 @@ func (q *Queue[T]) dequeue() interface{} {
 				// read value before CAS otherwise another dequeue might free the next node
 				v := next.value
 
-				if compareAndSwap[T](&q.head, head, next) {
+				if compareAndSwap(&q.head, head, next) {
 					return v // Dequeue is done.  return
 				}
 			}
@@ -86,15 +86,15 @@ func (q *Queue[T]) dequeue() interface{} {
 	}
 }
 
-func load[T any](p *unsafe.Pointer) (n *node[T]) {
-	return (*node[T])(atomic.LoadPointer(p))
+func load[T any](p *unsafe.Pointer) (n *node) {
+	return (*node)(atomic.LoadPointer(p))
 }
 
 // Perform an atomic compare-and-swap operation on a pointer.
 // This operation is used in concurrent programming to ensure that
 // a value is updated only if it has not been modified by another
 // thread since it was last observed.
-func compareAndSwap[T any](p *unsafe.Pointer, old, new *node[T]) (ok bool) {
+func compareAndSwap(p *unsafe.Pointer, old, new *node) (ok bool) {
 	return atomic.CompareAndSwapPointer(
 		p, unsafe.Pointer(old), unsafe.Pointer(new))
 }
