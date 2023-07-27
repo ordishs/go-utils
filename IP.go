@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"context"
 	"net"
 	"regexp"
+	"time"
 )
 
 func GetIPAddressesWithHint(hintRegex string) ([]string, error) {
@@ -26,4 +28,22 @@ func GetIPAddressesWithHint(hintRegex string) ([]string, error) {
 	}
 
 	return ipAddresses, nil
+}
+
+func GetPublicIPAddress() (string, error) {
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: time.Millisecond * time.Duration(10000),
+			}
+			return d.DialContext(ctx, network, "resolver1.opendns.com:53")
+		},
+	}
+	ip, err := r.LookupHost(context.Background(), "myip.opendns.com")
+	if err != nil {
+		return "", err
+	}
+
+	return ip[0], nil
 }

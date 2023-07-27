@@ -76,7 +76,7 @@ func InitGlobalTracer(serviceName string) (opentracing.Tracer, io.Closer, error)
 
 	cfg, err := config.FromEnv()
 	if err != nil {
-		return nil, nil, fmt.Errorf("cannot parse jaeger environment variables: %v\n", err.Error())
+		return nil, nil, fmt.Errorf("cannot parse jaeger environment variables: %v", err.Error())
 	}
 
 	cfg.ServiceName = serviceName
@@ -87,7 +87,7 @@ func InitGlobalTracer(serviceName string) (opentracing.Tracer, io.Closer, error)
 	var closer io.Closer
 	tracer, closer, err = cfg.NewTracer()
 	if err != nil {
-		return nil, nil, fmt.Errorf("cannot initialize jaeger tracer: %v\n", err.Error())
+		return nil, nil, fmt.Errorf("cannot initialize jaeger tracer: %v", err.Error())
 	}
 
 	opentracing.SetGlobalTracer(tracer)
@@ -169,7 +169,7 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 		opts...,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Error dialling grpc service at %s: %v", address, err)
+		return nil, fmt.Errorf("error dialling grpc service at %s: %v", address, err)
 	}
 
 	return conn, nil

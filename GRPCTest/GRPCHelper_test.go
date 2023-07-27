@@ -189,7 +189,7 @@ func TestGRPCServerUsingGRPCHelperSecurityLevel3(t *testing.T) {
 
 	go func() {
 		// Start the gRPC server
-		lis, err := net.Listen("tcp", "localhost:9000")
+		lis, err := net.Listen("tcp", "localhost:9004")
 		assert.NoError(t, err)
 
 		if err := srv.Serve(lis); err != nil {
@@ -198,7 +198,7 @@ func TestGRPCServerUsingGRPCHelperSecurityLevel3(t *testing.T) {
 	}()
 
 	// Connect to the server with a gRPC client
-	conn, err := utils.GetGRPCClient(context.Background(), "localhost:9000", &utils.ConnectionOptions{
+	conn, err := utils.GetGRPCClient(context.Background(), "localhost:9004", &utils.ConnectionOptions{
 		SecurityLevel: 3,
 		CertFile:      "certs/client1.crt",
 		KeyFile:       "certs/client1.key",
