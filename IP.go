@@ -10,7 +10,10 @@ import (
 func GetIPAddressesWithHint(hintRegex string) ([]string, error) {
 	var ipAddresses []string
 
-	hint := regexp.MustCompile(hintRegex)
+	hint, err := regexp.Compile(hintRegex)
+	if err != nil {
+		return nil, err
+	}
 
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
