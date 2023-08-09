@@ -6,6 +6,7 @@
     "cnode",
     "contrib",
     "Debugf",
+    "errgroup",
     "expiringmap",
     "Infof",
     "Lenf",

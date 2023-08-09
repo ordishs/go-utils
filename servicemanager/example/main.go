@@ -24,6 +24,21 @@ func NewService(name string) *SampleService {
 	}
 }
 
+func (s *SampleService) Init(ctx context.Context) error {
+	// if s.name == "SvcB" {
+	// 	for {
+	// 		select {
+	// 		case <-ctx.Done():
+	// 			s.logger.Infof("Aborting init of service %s", s.name)
+	// 			return ctx.Err()
+	// 		case <-time.After(2 * time.Second):
+	// 			// Simulate an error for demonstration
+	// 			return errors.New("SvcB init encountered an error")
+	// 		}
+	// 	}
+	// }
+	return nil
+}
 func (s *SampleService) Start(ctx context.Context) error {
 	// Simulating some long-running work
 	s.logger.Infof("Service %s is running...\n", s.name)
@@ -35,7 +50,7 @@ func (s *SampleService) Start(ctx context.Context) error {
 		case <-time.After(2 * time.Second):
 			// Simulate an error for demonstration
 			if s.name == "SvcB" {
-				return errors.New("SvcB encountered an error")
+				return errors.New("SvcB start encountered an error")
 			}
 		}
 	}
