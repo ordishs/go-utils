@@ -32,8 +32,7 @@ func New[K comparable, V any](expire time.Duration) *ExpiringMap[K, V] {
 
 	if expire != 0 {
 		go func() {
-			for {
-				time.Sleep(expire)
+			for range time.Tick(expire) {
 				m.clean()
 			}
 		}()
