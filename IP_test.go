@@ -17,6 +17,6 @@ func TestIP(t *testing.T) {
 
 func TestPublicIP(t *testing.T) {
 	ip, err := GetPublicIPAddress()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotEmpty(t, ip)
 }
