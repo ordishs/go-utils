@@ -162,8 +162,7 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 		opts = append(opts, grpc.WithChainUnaryInterceptor(retryInterceptor(connectionOptions.MaxRetries, connectionOptions.RetryBackoff)))
 	}
 
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.NewClient(
 		address,
 		opts...,
 	)
@@ -264,8 +263,9 @@ func loadTLSCredentials(connectionData *ConnectionOptions, isServer bool) (crede
 			}
 			return credentials.NewTLS(&tls.Config{
 				Certificates:       []tls.Certificate{cert},
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: false,
 				ClientAuth:         tls.NoClientCert,
+				MinVersion:         tls.VersionTLS12,
 			}), nil
 		} else {
 			// Load the server's CA certificate from disk
@@ -277,7 +277,8 @@ func loadTLSCredentials(connectionData *ConnectionOptions, isServer bool) (crede
 			caCertPool.AppendCertsFromPEM(caCert)
 
 			return credentials.NewTLS(&tls.Config{
-				RootCAs: caCertPool,
+				RootCAs:    caCertPool,
+				MinVersion: tls.VersionTLS12,
 			}), nil
 		}
 
@@ -292,6 +293,7 @@ func loadTLSCredentials(connectionData *ConnectionOptions, isServer bool) (crede
 				Certificates:       []tls.Certificate{cert},
 				InsecureSkipVerify: true,
 				ClientAuth:         tls.RequireAnyClientCert,
+				MinVersion:         tls.VersionTLS12,
 			}), nil
 
 		} else {
@@ -311,6 +313,7 @@ func loadTLSCredentials(connectionData *ConnectionOptions, isServer bool) (crede
 				Certificates:       []tls.Certificate{cert},
 				InsecureSkipVerify: true,
 				RootCAs:            caCertPool,
+				MinVersion:         tls.VersionTLS12,
 			}), nil
 
 		}
@@ -335,6 +338,7 @@ func loadTLSCredentials(connectionData *ConnectionOptions, isServer bool) (crede
 				InsecureSkipVerify: true,
 				ClientAuth:         tls.RequireAndVerifyClientCert,
 				ClientCAs:          caCertPool,
+				MinVersion:         tls.VersionTLS12,
 			}), nil
 
 		} else {
@@ -354,6 +358,7 @@ func loadTLSCredentials(connectionData *ConnectionOptions, isServer bool) (crede
 				Certificates:       []tls.Certificate{cert},
 				InsecureSkipVerify: true,
 				RootCAs:            caCertPool,
+				MinVersion:         tls.VersionTLS12,
 			}), nil
 		}
 	}

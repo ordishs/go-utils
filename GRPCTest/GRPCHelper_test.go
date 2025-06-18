@@ -40,7 +40,7 @@ func TestGRPCServerPlain(t *testing.T) {
 	}()
 
 	// Connect to the server with a gRPC client
-	conn, err := grpc.Dial("localhost:9000", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("localhost:9000", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 	defer conn.Close()
 
