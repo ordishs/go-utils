@@ -122,8 +122,7 @@ func GetGRPCClient(ctx context.Context, address string, connectionOptions *Conne
 	if connectionOptions.OpenTelemetry {
 		opts = append(
 			opts,
-			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 		)
 	}
 
@@ -187,8 +186,7 @@ func GetGRPCServer(connectionOptions *ConnectionOptions) (*grpc.Server, error) {
 	if connectionOptions.OpenTelemetry {
 		opts = append(
 			opts,
-			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+			grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		)
 	}
 
